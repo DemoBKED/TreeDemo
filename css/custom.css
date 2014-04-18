@@ -1,0 +1,13 @@
+body {
+	padding-top: 50px;
+}
+.footer {
+	width: 80%; 
+	margin: auto;
+}
+#paper {
+	background-color:#eee;
+}
+#inputbox {
+	min-width: 100px;
+}

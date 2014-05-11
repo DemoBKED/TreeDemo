@@ -1,59 +1,63 @@
 //some variables
-var WI;
-var HE;
-var ratio = 2 / 3; // = HE/WI;
-var r = 20; //circle radius
-var cAtt = { fill: "#bada55", stroke: "#000", "stroke-width": 2 }; //circle attributes
-var tAtt = { "font-size": 20, "font-weight": "bold" }; //text attributes
+var paper = Raphael("paper", "100%", "100%");
+var paperWidth;
+var paperHeight;
+var paperRatio = 2 / 3; // = paperHeight/paperWidth;
+
+var circleRadius = 20;
+var circleAttributes = { fill: "#bada55", stroke: "#000", "stroke-width": 2 };
+var circleTextAttributes = { "font-size": 20, "font-weight": "bold" };
+
+var paperDiv = document.getElementById("paper");
+var inputBox = document.getElementById("inputbox");
+var btnAdd = document.getElementById("add");
+var btnRemove = document.getElementById("remove");
+var animationCheckbox = document.getElementById("ani");
+
+var longAnimationTime = 1000;
+var shortAnimationTime = 500;
 var selectedNode = null;
 
-var ppdiv = document.getElementById("paper");
-var inputbox = document.getElementById("inputbox");
-var add_btn = document.getElementById("add");
-var remove_btn = document.getElementById("remove");
-var checkbox = document.getElementById("ani");
-checkbox.checked = true;
-
 //init
-WI = document.getElementById("paper").offsetWidth;
-HE = WI*ratio;
-ppdiv.style.height = HE + 'px';
-
+paperWidth = document.getElementById("paper").offsetWidth;
+paperHeight = paperWidth*paperRatio;
+paperDiv.style.height = paperHeight + 'px';
+animationCheckbox.checked = true;
 
 //class
-function position(x, y) {
+function Position(x, y) {
     this.x = x;
     this.y = y;
 }
 
 function Node(value) {
     this.value = value;
-    this.pos = new position(WI / 2, r / 2);
-	this.oldPos = null;
+    this.position = new Position(paperWidth / 2, circleRadius / 2);
+	this.oldPosition = null;
     this.left = null;
     this.right = null;
-    this.obj = pp.set();
     this.line = null;
+	this.objectSet = paper.set();
 }
 
 Node.prototype = {
     constructor: Node,
 
     draw: function () {
-        this.obj.push(pp.circle(this.pos.x, this.pos.y, r).attr(cAtt), pp.text(this.pos.x, this.pos.y, this.value).attr(tAtt));
+        this.objectSet.push(paper.circle(this.position.x, this.position.y, circleRadius).attr(circleAttributes), paper.text(this.position.x, this.position.y, this.value).attr(circleTextAttributes));
 		
-		//event
+		//"Node click"  event
 		var node = this;
-		this.obj.click(function(){
+		this.objectSet.click(function(){
 			selectNode(node);
 		});
     },
 
     move: function (x, y, func) {
         var node = this;
-		node.pos.x += x;
-        node.pos.y += y;
-        node.obj.animate({ transform: 't' + x + ' ' + y }, (x !== 0) ? 1000 : 500, "bounce", function () {
+		node.position.x += x;
+        node.position.y += y;
+        node.objectSet.animate({ transform: 't' + x + ' ' + y }, (x != 0) ? longAnimationTime : shortAnimationTime, "bounce", function () {
             node.remove();
             node.draw();
             func();
@@ -61,15 +65,15 @@ Node.prototype = {
 		
     },
 
-    lineto: function (node) {
-        this.line = pp.path('M' + this.pos.x + ',' + this.pos.y + ' L' + node.pos.x + ',' + node.pos.y).attr({ stroke: "red", "stroke-width": 3 }).toBack();
+    lineTo: function (node) {
+        this.line = paper.path('M' + this.position.x + ',' + this.position.y + ' L' + node.position.x + ',' + node.position.y).attr({ stroke: "red", "stroke-width": 3 }).toBack();
     },
 
     remove: function () {
-        this.obj.remove();
+        this.objectSet.remove();
     },
 
-    removeline: function () {
+    removeLine: function () {
         if (this.line !== null) this.line.remove();
     }
 
@@ -81,29 +85,31 @@ function BST() {
 
 BST.prototype = {
     constructor: BST,
-
-    add: function (val) {
-        var node = new Node(val), tree = this, current;
-        if (checkbox.checked) node.draw();
-        if (tree.root === null) {
-            if (checkbox.checked)
-                node.move(0, HE / 12, function () {
-                    tree.root = node;
-                });
-            else {
-                node.pos.y += HE / 12;
-                node.draw();
+	
+	addRootNode: function(node){
+		var tree = this;
+		if (animationCheckbox.checked) {
+            node.move(0, paperHeight / 12, function () {
                 tree.root = node;
-            }
-        }
+            });
+		}
         else {
-            current = tree.root;
-            var POS = [];
-            var dis = WI / 4;
-            var dup = false;
+            node.position.y += paperHeight / 12;
+            node.draw();
+            tree.root = node;
+        }
+	},
+
+	addLeafNode: function(node){
+		var current = this.root;
+            var nodeAnimatePositions = [];
+            var distanceX = paperWidth / 4;
+            var duplicated = false;
+			
+			//find node's position
             while (true) {
-                if (val < current.value) {
-                    POS.push(new position(-dis, HE/6));
+                if (node.value < current.value) {
+                    nodeAnimatePositions.push(new Position(-distanceX, paperHeight/6));
                     if (current.left === null) {
                         current.left = node;
                         break;
@@ -112,8 +118,8 @@ BST.prototype = {
                         current = current.left;
                     }
                 }
-                else if (val > current.value) {
-                    POS.push(new position(dis, HE/6));
+                else if (node.value > current.value) {
+                    nodeAnimatePositions.push(new Position(distanceX, paperHeight/6));
                     if (current.right === null) {
                         current.right = node;
                         break;
@@ -123,24 +129,35 @@ BST.prototype = {
                     }
                 }
                 else {
-                    dup = true;
+                    duplicated = true;
                     break;
                 }
-                dis /= 2;
+                distanceX /= 2;
             }
 
-            if (!dup) POS.push(new position(0, HE / 12));
-            if (checkbox.checked) {
-                animateNode(node, POS, 0, dup, current);
+			//add node to the tree
+            if (!duplicated) nodeAnimatePositions.push(new Position(0, paperHeight / 12));
+            if (animationCheckbox.checked) {
+                moveNode(node, nodeAnimatePositions, 0, duplicated, current);
             }
-            else if (!dup) {
-                for (var i = 0; i < POS.length; i++) {
-                    node.pos.x += POS[i].x;
-                    node.pos.y += POS[i].y;
+            else if (!duplicated) {
+                for (var i = 0; i < nodeAnimatePositions.length; i++) {
+                    node.position.x += nodeAnimatePositions[i].x;
+                    node.position.y += nodeAnimatePositions[i].y;
                 }
                 node.draw();
-                node.lineto(current);
+                node.lineTo(current);
             }
+	},
+	
+    add: function (value) {
+        var node = new Node(value);
+        if (animationCheckbox.checked) node.draw();
+        if (this.root === null) {
+            this.addRootNode(node);
+        }
+        else {
+            this.addLeafNode(node);
         }
     },
 
@@ -238,143 +255,138 @@ BST.prototype = {
 
             }
 			
-			if (checkbox.checked){
-				current.removeline();
+			if (animationCheckbox.checked){
+				current.removeLine();
 				if (current === this.root){
-					this.reposition();
+					this.updateWithAnimation();
 				}
 				else {
 					var tree = this;
-					current.obj.animate({transform: "t 50 -50 s0.5", fill: "red"},500,function(){
+					current.objectSet.animate({transform: "t 50 -50 s0.5", fill: "red"},500,function(){
 						current.remove();
-						tree.reposition();
+						tree.updateWithAnimation();
 					});		
 				}				
 			}
 			else {
 				current.remove();
-				current.removeline();
-				this.redraw();
+				current.removeLine();
+				this.updateWithoutAnimation();
 			}
         }
     },
 	
-	redraw: function(){
+	updateWithoutAnimation: function(){
 		if (this.root === null) return;
 		this.root.remove();
-		this.root.removeline();
-		this.root.pos.x = WI / 2;
-		this.root.pos.y = r / 2 + HE / 12;
+		this.root.removeLine();
+		this.root.position.x = paperWidth / 2;
+		this.root.position.y = circleRadius / 2 + paperHeight / 12;
 		this.root.draw();
-		redrawNode(this.root.left, this.root, WI / 4, true);
-		redrawNode(this.root.right, this.root, WI / 4, false);
+		redrawNodeWithoutAnimation(this.root.left, this.root, paperWidth / 4, true);
+		redrawNodeWithoutAnimation(this.root.right, this.root, paperWidth / 4, false);
 	},
 	
-	reposition: function(){
-		this.root.removeline();
-		if (this.root.pos.x != WI/2) this.root.move(WI/2 - this.root.pos.x, r / 2 + HE / 12 - this.root.pos.y);
-		reanimateNode(this.root.left, this.root, WI / 4, true);
-		reanimateNode(this.root.right, this.root, WI / 4, false);
+	updateWithAnimation: function(){
+		this.root.removeLine();
+		if (this.root.position.x != paperWidth/2) this.root.move(paperWidth/2 - this.root.position.x, circleRadius / 2 + paperHeight / 12 - this.root.position.y);
+		redrawNodeWithAnimation(this.root.left, this.root, paperWidth / 4, true);
+		redrawNodeWithAnimation(this.root.right, this.root, paperWidth / 4, false);
 	}
 };
 
 //function
-function animateNode(node, pos, i, remove, parent) {
-    if (pos.length === 0) {
+function moveNode(node, positionArray, i, duplicated, parent) {
+    if (positionArray.length === 0) {
         node.remove();
         return;
     }
-    node.move(pos[i].x, pos[i].y, function () {
-        if (++i < pos.length) {
-            animateNode(node, pos, i, remove, parent);
+    node.move(positionArray[i].x, positionArray[i].y, function () {
+        if (++i < positionArray.length) {
+            moveNode(node, positionArray, i, duplicated, parent);
         }
-        else if (remove) {
+        else if (duplicated) {
             node.remove();
         }
         else {
-            node.lineto(parent);
+            node.lineTo(parent);
         }
     });
 }
 
-function redrawNode(node, parent, distance, isLeft) {
+function redrawNodeWithoutAnimation(node, parent, distance, isLeft) {
     if (node === null) return;
-    node.pos.x = parent.pos.x + (isLeft?-1:1)*distance;
-    node.pos.y = parent.pos.y + HE / 6;
+    node.position.x = parent.position.x + (isLeft?-1:1)*distance;
+    node.position.y = parent.position.y + paperHeight / 6;
 	node.remove();
-	node.removeline();
+	node.removeLine();
 	node.draw();
-	node.lineto(parent);
-    redrawNode(node.left, node, distance / 2, true);
-    redrawNode(node.right, node, distance / 2, false);
+	node.lineTo(parent);
+    redrawNodeWithoutAnimation(node.left, node, distance / 2, true);
+    redrawNodeWithoutAnimation(node.right, node, distance / 2, false);
 }
 
-function reanimateNode(node, parent, distance, isLeft){
+function redrawNodeWithAnimation(node, parent, distance, isLeft){
 	if (node === null) return;
-	var newPos = new position(parent.pos.x + (isLeft?-1:1)*distance,parent.pos.y + HE / 6);
-	if (node.pos.x !== newPos.x && node.pos.y !== newPos.y){
-		node.removeline();
-		node.move(newPos.x - node.pos.x, newPos.y - node.pos.y, function(){
-			node.lineto(parent);
+	var newPos = new Position(parent.position.x + (isLeft?-1:1)*distance,parent.position.y + paperHeight / 6);
+	if (node.position.x !== newPos.x && node.position.y !== newPos.y){
+		node.removeLine();
+		node.move(newPos.x - node.position.x, newPos.y - node.position.y, function(){
+			node.lineTo(parent);
 		});
 	}
-	reanimateNode(node.left, node, distance / 2, true);
-	reanimateNode(node.right, node, distance / 2, false);
+	redrawNodeWithAnimation(node.left, node, distance / 2, true);
+	redrawNodeWithAnimation(node.right, node, distance / 2, false);
 }
 
 function selectNode(node){
 	if (selectedNode === node){
 		mtree.remove(node.value);
-		inputbox.value = "";
+		inputBox.value = "";
 		selectedNode = null;
 	}
 	else {
 		unselectNode();
 		selectedNode = node;
-		inputbox.value = node.value;
-		selectedNode.obj.animate({transform: "s1.5"},200);
+		inputBox.value = node.value;
+		selectedNode.objectSet.animate({transform: "s1.5"},200);
 	}
 }
 function unselectNode(){
 	if (selectedNode !== null){
-		selectedNode.obj.animate({transform: "s1"},200);
+		selectedNode.objectSet.animate({transform: "s1"},200);
 	}
 	selectedNode = null;
 }
 
 //event
-add_btn.onclick = function () {
-    if (!inputbox.value) return;
+btnAdd.onclick = function () {
+    if (!inputBox.value) return;
 	unselectNode();
-    mtree.add(parseInt(inputbox.value));
-    inputbox.value = "";
+    mtree.add(parseInt(inputBox.value));
+    inputBox.value = "";
 };
 
-remove_btn.onclick = function () {
-    if (!inputbox.value) return;	
+btnRemove.onclick = function () {
+    if (!inputBox.value) return;	
 	unselectNode();
-	mtree.remove(parseInt(inputbox.value));
-	inputbox.value = "";
+	mtree.remove(parseInt(inputBox.value));
+	inputBox.value = "";
 };
 
-inputbox.onclick = function () {
+inputBox.onclick = function () {
 	unselectNode();
-	inputbox.value = "";
+	inputBox.value = "";
 };
 
 //responsive
 window.addEventListener('resize', updateSize);
 function updateSize() {
-    WI = document.getElementById("paper").offsetWidth;
-    HE = WI*ratio;
-    ppdiv.style.height = HE + 'px';
-    mtree.redraw();
+    paperWidth = document.getElementById("paper").offsetWidth;
+    paperHeight = paperWidth*paperRatio;
+    paperDiv.style.height = paperHeight + 'px';
+    mtree.updateWithoutAnimation();
 }
 
-//create paper and tree
-var pp = Raphael("paper", "100%", "100%");
+//create tree
 var mtree = new BST();
-mtree.root = new Node(35);
-mtree.root.left = new Node(24);
-mtree.root.right = new Node(56);
-mtree.redraw();

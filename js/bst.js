@@ -262,7 +262,6 @@ BST.prototype = {
                 this.removeNonRootNode(findNodeObj.foundNode, findNodeObj.parentNode);
             }
             //Redraw the tree after remove node
-			/* Problem with tree.updateWithAnimation() (animation not execute), so i remove this part, will fix it asap
             if (checkboxAnimation.checked) { //execute animations
                 findNodeObj.foundNode.removeLine();
                 if (findNodeObj.foundNode === this.root) {
@@ -282,12 +281,7 @@ BST.prototype = {
                 findNodeObj.foundNode.removeLine();
                 this.updateWithoutAnimation();
             }
-			*/
-			
-			//replacement for above part
-			findNodeObj.foundNode.remove();
-            findNodeObj.foundNode.removeLine();
-			this.updateWithoutAnimation(); 
+		
         }
     },
 
@@ -304,7 +298,7 @@ BST.prototype = {
 
     updateWithAnimation: function () {
         this.root.removeLine();
-        if (this.root.position.x != rootPosition_x) this.root.move(rootPosition_x - this.root.position.x, rootPosition_Y - this.root.position.y);
+        if (this.root.position.x != rootPosition_X) this.root.move(rootPosition_X - this.root.position.x, rootPosition_Y - this.root.position.y);
         redrawNodeWithAnimation(this.root.left, this.root, nodeDistance_X, true);
         redrawNodeWithAnimation(this.root.right, this.root, nodeDistance_X, false);
     }
